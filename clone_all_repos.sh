@@ -11,14 +11,12 @@ if [ -z "$USER" ]; then
     exit 1
 fi
 
-# Get list of repo SSH URLs via GitHub API (handles pagination)
 PAGE=1
 while true; do
     REPOS=$(curl -s "https://api.github.com/users/$USER/repos?per_page=100&page=$PAGE" \
             | grep -o '"ssh_url": "[^"]*' \
             | cut -d '"' -f4)
 
-    # Stop when no more repos returned
     if [ -z "$REPOS" ]; then
         break
     fi
@@ -26,6 +24,13 @@ while true; do
     echo "Cloning page $PAGE of repositories via SSH..."
 
     for REPO in $REPOS; do
+        REPO_DIR=$(basename "$REPO" .git)
+
+        if [ -d "$REPO_DIR" ]; then
+            echo "Skipping $REPO_DIR — directory already exists."
+            continue
+        fi
+
         echo "Cloning $REPO"
         git clone "$REPO"
     done
@@ -34,3 +39,4 @@ while true; do
 done
 
 echo "Done."
+
